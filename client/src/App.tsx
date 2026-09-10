@@ -83,8 +83,8 @@ function App() {
               <a className="button button-quiet" href="/Visual Arts CV.pdf" download>Download CV <Download size={16} /></a>
             </div>
           </div>
-          <div className="hero-art" aria-label="Abstract 3D camera lens composition">
-            <div className="art-frame"><div className="art-grid" /><div className="portrait-orbit"><img src="/myimage.jpeg" alt="Marouane Bouakba" /><span>MAROUANE<br />BOUAKBA</span></div><div className="lens-orb"><div className="lens-glass" /><div className="lens-ring ring-a" /><div className="lens-ring ring-b" /><span className="lens-spec">50<br />MM</span></div><div className="art-orbit orbit-one" /><div className="art-orbit orbit-two" /><div className="art-crosshair" /><span className="art-caption">VISUAL ARTS<br /><strong>01 — 09</strong></span><span className="art-side-label">FRAME / SOUND / MOTION</span><span className="art-hint">rotate the perspective</span></div>
+          <div className="hero-art" aria-label="Portrait of Marouane Bouakba">
+            <div className="portrait-stage"><img src="/myimage.jpeg" alt="Marouane Bouakba" /><span className="portrait-label">MAROUANE BOUAKBA<br /><strong>VISUAL ARTIST / 01</strong></span><span className="portrait-coordinate">25°17'N<br />51°32'E</span></div>
             <div className="hero-index">01 <span /> 04</div>
           </div>
           <div className="hero-meta"><span>Based in {cv.location}</span><span>Working globally</span><span>Visual arts / 2026</span></div>

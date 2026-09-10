@@ -154,7 +154,7 @@ h2 span, h2 em { font-style: italic; }
   .hero { min-height: auto; padding-top: 75px; padding-bottom: 110px; display: block; }
   .hero-copy { margin-bottom: 65px; }
   .hero-art { height: 370px; }
-  .hero-meta { left: 6vw; right: 6vw; bottom: 30px; gap: 12px; }
+  .hero-meta { position: static; margin-top: 44px; gap: 12px; }
   .hero-meta span:nth-child(2) { display: none; }
   .manifesto-grid, .capability-grid, .education-card { grid-template-columns: 1fr; gap: 50px; }
   .manifesto, .capabilities, .education, .contact { padding-top: 75px; padding-bottom: 80px; }

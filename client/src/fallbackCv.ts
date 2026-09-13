@@ -117,7 +117,7 @@ export const fallbackCv = {
     { label: 'Edit & motion', detail: 'Typography · logos · transitions · infographics · branded formats' },
     { label: 'Design direction', detail: 'Static graphics · layouts · illustration · print · digital · social · events' },
     { label: 'Sound', detail: 'Studio & field recording · sound design · editing · mixing · mastering' },
-    { label: 'Software', detail: 'DaVinci Resolve · Adobe Creative Suite · Nuendo · Topaz AI · Canva Pro' },
+    { label: 'Software', detail: 'DaVinci Resolve · Adobe Creative Suite · Nuendo · AI tools' },
   ],
   languages: [
     { label: 'Arabic', detail: 'Native' },

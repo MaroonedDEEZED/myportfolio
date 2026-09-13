@@ -124,7 +124,7 @@ export const cv = {
     { label: 'Post-Production & Motion', detail: 'Editing · colour grading · motion graphics · typography · logo animation · infographics · transitions' },
     { label: 'Audio Production', detail: 'Sound design · studio & field recording · dialogue editing · mixing · mastering · music composition' },
     { label: 'Production Management', detail: 'Pre-production planning · logistics · post-production workflow management · crew coordination · client management' },
-    { label: 'Software', detail: 'DaVinci Resolve · Adobe Creative Suite · Premiere Pro · After Effects · Photoshop · Illustrator · InDesign · Audition · Nuendo · Topaz AI · Canva Pro' },
+    { label: 'Software', detail: 'DaVinci Resolve · Adobe Creative Suite · Premiere Pro · After Effects · Photoshop · Illustrator · InDesign · Audition · Nuendo · AI tools' },
   ],
   languages: [
     { label: 'Arabic', detail: 'Native' },

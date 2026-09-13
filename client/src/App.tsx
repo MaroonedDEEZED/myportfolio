@@ -87,8 +87,6 @@ function App() {
         <a className="brand" href="#top" aria-label="Back to top" onClick={() => setPage('home')}><span className="brand-mark"><span>M</span><span>B</span></span><span className="brand-text">Marouane<br />Bouakba</span></a>
         <nav className={menuOpen ? 'nav-links nav-open' : 'nav-links'}>
           <button className="nav-link-button" onClick={() => { setPage('home'); setMenuOpen(false); }}>Home</button>
-          <button className="nav-link-button" onClick={() => { setPage('home'); setMenuOpen(false); window.location.hash = '#work'; }}>Selected work</button>
-          <button className="nav-link-button" onClick={() => { setPage('home'); setMenuOpen(false); window.location.hash = '#practice'; }}>Practice</button>
           <button className="nav-link-button" onClick={() => { setPage('portfolio'); setMenuOpen(false); }}>Portfolio</button>
           <button className="nav-link-button" onClick={() => { setPage('home'); setMenuOpen(false); window.location.hash = '#contact'; }}>Contact</button>
         </nav>
@@ -114,8 +112,7 @@ function App() {
                 </div>
               </div>
               <div className="hero-art" aria-label="Portrait of Marouane Bouakba">
-                <div className="portrait-stage"><img src="/myimage.jpeg" alt="Marouane Bouakba" /><span className="portrait-label">MAROUANE BOUAKBA<br /><strong>VISUAL ARTIST / 01</strong></span><span className="portrait-coordinate">25°17'N<br />51°32'E</span></div>
-                <div className="hero-index">01 <span /> 04</div>
+                <div className="portrait-stage"><img src="/myimage.jpeg" alt="Marouane Bouakba" /><span className="portrait-label">MAROUANE BOUAKBA<br /><strong>VISUAL ARTIST / 01</strong></span></div>
               </div>
               <div className="hero-meta"></div>
             </section>
@@ -179,7 +176,7 @@ function App() {
 
             <section className="education section-pad"><div className="education-card"><div><div className="section-kicker"><span>05</span><span>Formation</span></div><h2>Made in the<br /><em>arts of spectacle.</em></h2></div><div className="edu-detail"><span className="edu-year">ISMAS</span><h3>{cv.education.degree}</h3><p>{cv.education.detail}<br />{cv.education.location}</p></div><div className="language-detail"><span>Languages</span>{cv.languages.map((language) => <p key={language.label}><strong>{language.label}</strong> <small>{language.detail}</small></p>)}</div></div></section>
 
-            <section className="contact section-pad" id="contact"><div className="contact-card"><div className="section-kicker"><span>06</span><span>Next scene</span></div><h2>Have a story<br /><em>in mind?</em></h2><a className="contact-email" href={`mailto:${cv.email}`}>{cv.email} <ArrowUpRight size={22} /></a><div className="contact-bottom"><span>{cv.phone}</span></div></div></section>
+            <section className="contact section-pad" id="contact"><div className="contact-card"><div className="section-kicker"><span>06</span><span>Next scene</span></div><h2>Have a story<br /><em>in mind?</em></h2><a className="contact-email" href={`mailto:${cv.email}`}>{cv.email} <ArrowUpRight size={22} /></a><span className="contact-phone">{cv.phone}</span></div></section>
           </>
         )}
       </main>

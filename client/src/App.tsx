@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type SyntheticEvent } from 'react';
 import { ArrowDownRight, ArrowUpRight, Download, ExternalLink, Film, Menu, MoveRight, Play, X } from 'lucide-react';
 import { portfolioAssets, type PortfolioAsset } from './portfolioAssets';
+import { cv as fallbackCv } from '../../server/src/data/cv';
 
 type Experience = {
   company: string;
@@ -44,12 +45,31 @@ function App() {
   const [activeFilter, setActiveFilter] = useState('All work');
   const [menuOpen, setMenuOpen] = useState(false);
   const [page, setPage] = useState<'home' | 'portfolio'>('home');
+  const [apiError, setApiError] = useState<string | null>(null);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [page]);
 
   useEffect(() => {
     fetch('/api/cv')
-      .then((response) => response.json())
-      .then(setCv)
-      .catch(() => setCv(null));
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`CV API returned ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((payload) => {
+        if (!payload || !Array.isArray(payload.experience) || !Array.isArray(payload.skills) || !Array.isArray(payload.languages)) {
+          throw new Error('CV API payload was malformed');
+        }
+        setCv(payload as CV);
+        setApiError(null);
+      })
+      .catch(() => {
+        setCv(fallbackCv as CV);
+        setApiError('The live CV feed could not be reached, so the archive fallback was loaded.');
+      });
   }, []);
 
   const visibleExperience = useMemo(
@@ -77,6 +97,7 @@ function App() {
       </header>
 
       <main id="top">
+        {apiError && <div className="site-warning"><span>{apiError}</span></div>}
         {page === 'portfolio' ? (
           <PortfolioPage cv={cv} onBack={() => setPage('home')} />
         ) : (
@@ -89,14 +110,14 @@ function App() {
                 <div className="hero-actions">
                   <a className="button button-primary" href="#work">Explore the work <ArrowDownRight size={17} /></a>
                   <button className="button button-quiet" onClick={() => setPage('portfolio')}>Open portfolio <ArrowUpRight size={16} /></button>
-                  <a className="button button-quiet" href="/Visual Arts CV.pdf" download>Download CV <Download size={16} /></a>
+                  <a className="button button-quiet" href="/Marouane_Bouakba_Content_Producer_CV.pdf" download>Download CV <Download size={16} /></a>
                 </div>
               </div>
               <div className="hero-art" aria-label="Portrait of Marouane Bouakba">
                 <div className="portrait-stage"><img src="/myimage.jpeg" alt="Marouane Bouakba" /><span className="portrait-label">MAROUANE BOUAKBA<br /><strong>VISUAL ARTIST / 01</strong></span><span className="portrait-coordinate">25°17'N<br />51°32'E</span></div>
                 <div className="hero-index">01 <span /> 04</div>
               </div>
-              <div className="hero-meta"><span>Based in {cv.location}</span><span>Working globally</span><span>Visual arts / 2026</span></div>
+              <div className="hero-meta"></div>
             </section>
             <section className="portfolio-strip section-pad" id="portfolio">
               <div className="section-heading portfolio-heading">
@@ -119,9 +140,6 @@ function App() {
                         <span className="portfolio-card-number">{String(index + 1).padStart(2, '0')}</span>
                         <span className="portfolio-card-location">{asset.location}</span>
                       </div>
-                      <span className="portfolio-card-meta">{asset.kind === 'video' ? 'MOTION' : 'STILL'} / {asset.year}</span>
-                      <h3>{asset.title}</h3>
-                      <p>{asset.summary}</p>
                       <div className="portfolio-card-footer">
                         <span>{asset.kind === 'video' ? 'VIDEO' : 'PHOTO'}</span>
                         <span className="card-arrow"><ArrowUpRight size={14} /></span>
@@ -157,12 +175,11 @@ function App() {
                 <div className="capability-intro"><h2>Wide lens.<br /><em>Deep craft.</em></h2><p>One practice, many entry points. The work gets stronger when the disciplines speak to one another.</p></div>
                 <div className="skill-list">{cv.skills.map((skill, index) => <div className="skill-row" key={skill.label}><span className="skill-number">0{index + 1}</span><div><h3>{skill.label}</h3><p>{skill.detail}</p></div><MoveRight size={18} /></div>)}</div>
               </div>
-              <div className="tool-strip"><span>DaVinci Resolve</span><span>Adobe Creative Suite</span><span>Steinberg Nuendo</span><span>Topaz AI Tools</span><span>Canva Pro</span></div>
             </section>
 
             <section className="education section-pad"><div className="education-card"><div><div className="section-kicker"><span>05</span><span>Formation</span></div><h2>Made in the<br /><em>arts of spectacle.</em></h2></div><div className="edu-detail"><span className="edu-year">ISMAS</span><h3>{cv.education.degree}</h3><p>{cv.education.detail}<br />{cv.education.location}</p></div><div className="language-detail"><span>Languages</span>{cv.languages.map((language) => <p key={language.label}><strong>{language.label}</strong> <small>{language.detail}</small></p>)}</div></div></section>
 
-            <section className="contact section-pad" id="contact"><div className="contact-card"><div className="section-kicker"><span>06</span><span>Next scene</span></div><h2>Have a story<br /><em>in mind?</em></h2><a className="contact-email" href={`mailto:${cv.email}`}>{cv.email} <ArrowUpRight size={22} /></a><div className="contact-bottom"><span>{cv.phone}</span><a href={cv.portfolio} target="_blank" rel="noreferrer">External portfolio <ExternalLink size={14} /></a></div></div></section>
+            <section className="contact section-pad" id="contact"><div className="contact-card"><div className="section-kicker"><span>06</span><span>Next scene</span></div><h2>Have a story<br /><em>in mind?</em></h2><a className="contact-email" href={`mailto:${cv.email}`}>{cv.email} <ArrowUpRight size={22} /></a><div className="contact-bottom"><span>{cv.phone}</span></div></div></section>
           </>
         )}
       </main>
@@ -172,12 +189,9 @@ function App() {
 }
 
 function PortfolioPage({ cv, onBack }: { cv: CV; onBack: () => void }) {
-  const [currentPage, setCurrentPage] = useState(1);
   const [viewerAsset, setViewerAsset] = useState<PortfolioAsset | null>(null);
   const [viewerError, setViewerError] = useState(false);
-  const pageSize = 8;
-  const pageCount = Math.ceil(portfolioAssets.length / pageSize);
-  const visibleAssets = portfolioAssets.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const portfolioDisplayAssets = portfolioAssets;
 
   const openPreview = (asset: PortfolioAsset) => {
     setViewerError(false);
@@ -187,14 +201,6 @@ function PortfolioPage({ cv, onBack }: { cv: CV; onBack: () => void }) {
   const closePreview = () => {
     setViewerError(false);
     setViewerAsset(null);
-  };
-
-  const goToPage = (page: number) => {
-    const nextPage = Math.min(Math.max(page, 1), pageCount);
-    setCurrentPage(nextPage);
-    if (typeof window !== 'undefined') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
   };
 
   useEffect(() => {
@@ -225,7 +231,7 @@ function PortfolioPage({ cv, onBack }: { cv: CV; onBack: () => void }) {
       </section>
 
       <section className="portfolio-page-grid section-pad">
-        {visibleAssets.map((asset, index) => (
+        {portfolioDisplayAssets.map((asset) => (
           <article className="portfolio-page-card" key={asset.title}>
             <button className="portfolio-page-card-media" type="button" onClick={() => openPreview(asset)} aria-label={`Open ${asset.title}`}> 
               {asset.kind === 'photo' ? (
@@ -239,20 +245,7 @@ function PortfolioPage({ cv, onBack }: { cv: CV; onBack: () => void }) {
                   setViewerError(true);
                 }} />
               )}
-              <span className="portfolio-media-tag">{asset.kind === 'photo' ? 'Still' : 'Motion'} / {asset.year}</span>
             </button>
-            <div className="portfolio-page-card-body">
-              <div className="portfolio-page-card-top">
-                <span className="portfolio-card-number">{String(((currentPage - 1) * pageSize) + index + 1).padStart(2, '0')}</span>
-                <span className="portfolio-card-location">{asset.location}</span>
-              </div>
-              <h3>{asset.title}</h3>
-              <p>{asset.summary}</p>
-              <div className="portfolio-page-card-footer">
-                <span>{asset.kind}</span>
-                <button className="icon-button" type="button" onClick={() => openPreview(asset)} aria-label={`Open ${asset.title}`}> <ArrowUpRight size={14} /> </button>
-              </div>
-            </div>
           </article>
         ))}
       </section>
@@ -284,10 +277,6 @@ function PortfolioPage({ cv, onBack }: { cv: CV; onBack: () => void }) {
               )}
             </div>
             <div className="media-viewer-details">
-              <div>
-                <span className="media-viewer-kicker">{viewerAsset.kind === 'photo' ? 'Still' : 'Motion'} / {viewerAsset.year}</span>
-                <h2>{viewerAsset.title}</h2>
-              </div>
               <div className="media-viewer-meta">
                 <span>{viewerAsset.location}</span>
                 <span>{viewerAsset.summary}</span>
@@ -297,15 +286,7 @@ function PortfolioPage({ cv, onBack }: { cv: CV; onBack: () => void }) {
         </div>
       )}
 
-      <section className="portfolio-page-pagination section-pad" aria-label="Portfolio pages">
-        <div className="pagination">
-          <button className="pagination-button" disabled={currentPage === 1} onClick={() => goToPage(currentPage - 1)}>Prev</button>
-          {Array.from({ length: pageCount }).map((_, index) => (
-            <button key={index + 1} className={currentPage === index + 1 ? 'pagination-number active' : 'pagination-number'} onClick={() => goToPage(index + 1)}>{index + 1}</button>
-          ))}
-          <button className="pagination-button" disabled={currentPage === pageCount} onClick={() => goToPage(currentPage + 1)}>Next</button>
-        </div>
-      </section>
+
     </section>
   );
 }

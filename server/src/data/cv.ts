@@ -9,12 +9,12 @@ export type Experience = {
 
 export const cv = {
   name: 'Marouane Bouakba',
-  role: 'Visual artist / cinematographer / editor',
+  role: 'Content Producer · Video Editor · Director of Photography',
   location: 'Doha, Qatar',
   phone: '+974 7027 3027',
   email: 'bouakbamarouane@gmail.com',
   portfolio: 'https://mega.nz/folder/Wq4Q0T4K#giNkfTvU4BpdZ86JJHaqaQ',
-  intro: 'I build image-led stories from first frame to final mix, moving fluidly between camera, edit, sound and design.',
+  intro: 'Content producer with 7 years of end-to-end production across advertising, broadcast, documentary and branded social content, working in Algeria and Qatar. Builds short-form and campaign video from brief to final master — camera, edit, colour, motion graphics and full audio post under one pair of hands. Native Arabic, proficient English and French; based in Doha and available across the GCC.',
   education: {
     school: 'ISMAS',
     detail: 'Institut Supérieur des Métiers des Arts du Spectacle',
@@ -29,22 +29,32 @@ export const cv = {
       location: 'Doha, Qatar',
       focus: 'Agency production · 10+ recurring clients',
       highlights: [
-        'Managed pre-production and production for a range of client projects.',
-        'Shot, edited and color-graded work for more than 10 recurring agency clients.',
-        'Composed and mixed music for videos across multiple client briefs.',
-        'Maintained production software and equipment workflows.',
+        'Shot, edited and colour graded video for 10+ recurring agency clients across brand, social and commercial formats.',
+        'Led pre-production and production as Director of Photography, owning each project from brief through to final master.',
+        'Composed and mixed original music for client video deliverables.',
+      ],
+    },
+    {
+      company: 'Self-employed',
+      role: 'Freelance Content Producer',
+      dates: 'Aug 2024 - Sep 2025',
+      location: 'Doha, Qatar / Remote',
+      focus: 'Independent clients · healthcare · hospitality',
+      highlights: [
+        'Produced social media content for a roster of independent clients across the healthcare and hospitality sectors, including medical centres and restaurants.',
+        'Owned the full cycle per client — brief, concept, shoot, edit and platform-ready delivery.',
+        'Managed client relationships, revisions and delivery schedules independently.',
       ],
     },
     {
       company: 'Vintage Blue Productions',
-      role: 'Production Manager / Main Video Editor',
+      role: 'Production Manager / Lead Video Editor',
       dates: 'Jan 2024 - Jul 2024',
       location: 'Algiers, Algeria',
       focus: 'Institutional film · documentary · digital department',
       highlights: [
-        'Managed production logistics and led the edit for an Air Algérie institutional film.',
-        'Worked as video editor, music composer, head of digital and sound mixer on One Day Documentary.',
-        'Owned comprehensive post-production, sound mixing and digital department delivery.',
+        'Managed production logistics and led editing on an institutional film for Air Algérie, Algeria’s national airline.',
+        'Led full post-production of the documentary “Maybe One Day” — editing, music composition, sound mixing and digital department oversight.',
       ],
     },
     {
@@ -54,8 +64,7 @@ export const cv = {
       location: 'Algiers, Algeria',
       focus: 'Commercial production',
       highlights: [
-        'Operated camera for commercial advertisements with a focus on high-quality visual capture.',
-        'Managed sound recording and engineering on set.',
+        'Operated camera for commercial advertisements and managed on-set sound recording and engineering.',
       ],
     },
     {
@@ -65,20 +74,38 @@ export const cv = {
       location: 'Algiers, Algeria',
       focus: 'Advertising campaigns',
       highlights: [
-        'Served as camera operator for commercial shoots.',
-        'Edited video content for advertising campaigns.',
+        'Operated camera for commercial shoots and edited video content for advertising campaigns.',
       ],
     },
     {
       company: 'Ciné Rêve Production',
-      role: 'Camera Operator / Sound Engineer / Post Production Manager / 1st Sound Assistant',
+      role: 'Camera Operator / Post-Production & Audio Lead',
       dates: 'Dec 2021 - Apr 2023',
       location: 'Algiers, Algeria',
       focus: 'Commercials · sitcom · series',
       highlights: [
-        'Operated camera for commercial advertisements.',
-        'Worked as sound engineer and post-production manager on the sitcom Aziz and Lynda.',
-        'Served as 1st sound assistant on the Leyam series.',
+        'Sound engineer and post-production manager for the sitcom “Aziz and Lynda”; operated camera for commercial advertisements.',
+        'Served as first sound assistant for the television series “Leyam”.',
+      ],
+    },
+    {
+      company: 'EL Djazair N1 TV',
+      role: 'Sound Engineer',
+      dates: '2019 - 2020',
+      location: 'Algiers, Algeria',
+      focus: 'Broadcast production',
+      highlights: [
+        'Handled sound engineering across channel production and post-production.',
+      ],
+    },
+    {
+      company: 'X Motion Production',
+      role: 'Post-Production Manager',
+      dates: 'Mar 2020 - Jul 2020',
+      location: 'Algiers, Algeria',
+      focus: 'Post-production workflows',
+      highlights: [
+        'Managed post-production workflows and deliverables from edit through delivery.',
       ],
     },
     {
@@ -88,36 +115,16 @@ export const cv = {
       location: 'Algiers, Algeria',
       focus: 'Television series · Bent Leblad',
       highlights: [
-        'Provided primary sound assistance for Bent Leblad, ensuring clear audio capture.',
-      ],
-    },
-    {
-      company: 'X Motion Production',
-      role: 'Post Production Manager',
-      dates: 'Mar 2020 - Jul 2020',
-      location: 'Algiers, Algeria',
-      focus: 'Post-production workflows',
-      highlights: [
-        'Managed post-production workflows and deliverables from edit through delivery.',
-      ],
-    },
-    {
-      company: 'EL Djazair N1 TV',
-      role: 'Sound Engineer (Channel Production / Post Production)',
-      dates: 'Sep 2019 - Feb 2020',
-      location: 'Algiers, Algeria',
-      focus: 'Broadcast production',
-      highlights: [
-        'Handled sound engineering across channel production and post-production.',
+        'Provided primary sound assistance for the television series “Bent Leblad” ensuring clear audio capture.',
       ],
     },
   ] satisfies Experience[],
   skills: [
-    { label: 'Camera operation', detail: 'Focus pulling · shot composition · on-set problem-solving · equipment handling' },
-    { label: 'Edit & motion', detail: 'Typography · logos · transitions · infographics · branded formats' },
-    { label: 'Design direction', detail: 'Static graphics · layouts · illustration · print · digital · social · events' },
-    { label: 'Sound', detail: 'Studio & field recording · sound design · editing · mixing · mastering' },
-    { label: 'Software', detail: 'DaVinci Resolve · Adobe Creative Suite · Nuendo · Topaz AI · Canva Pro' },
+    { label: 'Cinematography', detail: 'Director of Photography · camera operation · commercial · documentary · broadcast · shot composition · focus pulling · on-set problem solving · equipment handling' },
+    { label: 'Post-Production & Motion', detail: 'Editing · colour grading · motion graphics · typography · logo animation · infographics · transitions' },
+    { label: 'Audio Production', detail: 'Sound design · studio & field recording · dialogue editing · mixing · mastering · music composition' },
+    { label: 'Production Management', detail: 'Pre-production planning · logistics · post-production workflow management · crew coordination · client management' },
+    { label: 'Software', detail: 'DaVinci Resolve · Adobe Creative Suite · Premiere Pro · After Effects · Photoshop · Illustrator · InDesign · Audition · Nuendo · Topaz AI · Canva Pro' },
   ],
   languages: [
     { label: 'Arabic', detail: 'Native' },

@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState, type SyntheticEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type SyntheticEvent } from 'react';
 import { ArrowDownRight, ArrowUpRight, Download, ExternalLink, Film, Menu, MoveRight, Play, X } from 'lucide-react';
 import { portfolioAssets, type PortfolioAsset } from './portfolioAssets';
+import { posterUrl, stillUrl } from './mediaUrls';
 import { cv as fallbackCv } from '../../server/src/data/cv';
 
 type Experience = {
@@ -40,6 +41,75 @@ function matchesFilter(item: Experience, filter: string) {
   return terms[filter].some((term) => text.includes(term));
 }
 
+// The feed reads as a curated contact sheet: one feature frame, then supporting
+// tiles. Slots repeat every four items so the pattern survives a different slice.
+type TileSlot = 'feature' | 'standard' | 'wide';
+
+const TILE_SIZE: Record<TileSlot, { w: number; h: number }> = {
+  feature: { w: 1200, h: 760 },
+  standard: { w: 620, h: 360 },
+  wide: { w: 1200, h: 340 },
+};
+
+const slotFor = (index: number): TileSlot => {
+  const position = index % 4;
+  if (position === 0) return 'feature';
+  if (position === 3) return 'wide';
+  return 'standard';
+};
+
+// Previewing on intent needs a pointer that can hover and a visitor who has not
+// asked for reduced motion. Without both, tiles stay as stills.
+const previewsOnHover = typeof window !== 'undefined'
+  && window.matchMedia('(hover: hover) and (prefers-reduced-motion: no-preference)').matches;
+
+function PortfolioTile({ asset, index, onOpen }: { asset: PortfolioAsset; index: number; onOpen: () => void }) {
+  const video = useRef<HTMLVideoElement>(null);
+  const slot = slotFor(index);
+  const { w, h } = TILE_SIZE[slot];
+  const isVideo = asset.kind === 'video';
+
+  // Videos ship as poster only (preload="none"), so a first paint costs no video
+  // bytes. Playback starts when the tile is hovered or focused, and rewinds on exit.
+  const startPreview = () => {
+    if (!isVideo || !previewsOnHover) return;
+    void video.current?.play().catch(() => {});
+  };
+
+  const stopPreview = () => {
+    const element = video.current;
+    if (!element) return;
+    element.pause();
+    element.currentTime = 0;
+  };
+
+  return (
+    <button
+      type="button"
+      className={`pf-tile pf-tile--${slot}${isVideo ? ' pf-tile--video' : ''}`}
+      onClick={onOpen}
+      onMouseEnter={startPreview}
+      onMouseLeave={stopPreview}
+      onFocus={startPreview}
+      onBlur={stopPreview}
+      aria-label={`${isVideo ? 'Video' : 'Photo'} ${String(index + 1).padStart(2, '0')} — open portfolio`}
+    >
+      <span className="pf-tile-media">
+        {isVideo ? (
+          <video ref={video} src={asset.asset} poster={posterUrl(asset.poster, w, h)} muted loop playsInline preload="none" />
+        ) : (
+          <img src={stillUrl(asset.asset, w, h)} alt="" loading={index === 0 ? 'eager' : 'lazy'} decoding="async" />
+        )}
+        <span className="pf-tile-chip">{isVideo ? <><Play size={10} /> Video</> : 'Photo'}</span>
+      </span>
+      <span className="pf-tile-bar">
+        <span className="pf-tile-index">{String(index + 1).padStart(2, '0')}</span>
+        <span className="pf-tile-open">Open <ArrowUpRight size={13} /></span>
+      </span>
+    </button>
+  );
+}
+
 function App() {
   const [cv, setCv] = useState<CV | null>(null);
   const [activeFilter, setActiveFilter] = useState('All work');
@@ -76,6 +146,11 @@ function App() {
     () => cv?.experience.filter((item) => matchesFilter(item, activeFilter)) ?? [],
     [cv, activeFilter],
   );
+
+  const portfolioCounts = useMemo(() => {
+    const videos = portfolioAssets.filter((asset) => asset.kind === 'video').length;
+    return { videos, stills: portfolioAssets.length - videos };
+  }, []);
 
   if (!cv) {
     return <div className="loading-screen"><span className="loading-mark">MB</span><span>Loading archive...</span></div>;
@@ -118,30 +193,16 @@ function App() {
             <section className="portfolio-strip section-pad" id="portfolio">
               <div className="section-heading portfolio-heading">
                 <div className="section-kicker"><span>01</span><span>Portfolio feed</span></div>
-                <button className="section-link" onClick={() => setPage('portfolio')}>Enter Portfolio Page <ArrowUpRight size={14} /></button>
+                <div className="portfolio-heading-right">
+                  <p className="portfolio-tally">
+                    <strong>{portfolioCounts.videos}</strong> films · <strong>{portfolioCounts.stills}</strong> stills
+                  </p>
+                  <button className="section-link" onClick={() => setPage('portfolio')}>Enter Portfolio Page <ArrowUpRight size={14} /></button>
+                </div>
               </div>
-              <div className="portfolio-strip-grid">
+              <div className="portfolio-feed">
                 {portfolioAssets.slice(0, 4).map((asset, index) => (
-                  <a className="portfolio-strip-card" key={asset.title} href="#portfolio" onClick={(event) => { event.preventDefault(); setPage('portfolio'); }}>
-                    <div className="portfolio-card-media">
-                      {asset.kind === 'photo' ? (
-                        <img src={asset.asset} alt={asset.title} />
-                      ) : (
-                        <video muted loop playsInline autoPlay src={asset.asset} poster={asset.poster} />
-                      )}
-                      <span className="portfolio-card-type">{asset.kind === 'photo' ? 'Photo' : 'Video'} <Play size={11} /></span>
-                    </div>
-                    <div className="portfolio-card-content">
-                      <div className="portfolio-card-top">
-                        <span className="portfolio-card-number">{String(index + 1).padStart(2, '0')}</span>
-                        <span className="portfolio-card-location">{asset.location}</span>
-                      </div>
-                      <div className="portfolio-card-footer">
-                        <span>{asset.kind === 'video' ? 'VIDEO' : 'PHOTO'}</span>
-                        <span className="card-arrow"><ArrowUpRight size={14} /></span>
-                      </div>
-                    </div>
-                  </a>
+                  <PortfolioTile key={asset.title} asset={asset} index={index} onOpen={() => setPage('portfolio')} />
                 ))}
               </div>
             </section>

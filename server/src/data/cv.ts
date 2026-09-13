@@ -100,13 +100,13 @@ export const cv = {
       ],
     },
     {
-      company: 'EL Djazair N1 TV',
-      role: 'Sound Engineer',
-      dates: '2019 - 2020',
+      company: 'Wellcom Production',
+      role: '1st Sound Assistant',
+      dates: 'Aug 2021 - Nov 2021',
       location: 'Algiers, Algeria',
-      focus: 'Broadcast production',
+      focus: 'Television series · Bent Leblad',
       highlights: [
-        'Handled sound engineering across channel production and post-production.',
+        'Provided primary sound assistance for the television series “Bent Leblad” ensuring clear audio capture.',
       ],
     },
     {
@@ -120,13 +120,13 @@ export const cv = {
       ],
     },
     {
-      company: 'Wellcom Production',
-      role: '1st Sound Assistant',
-      dates: 'Aug 2021 - Nov 2021',
+      company: 'EL Djazair N1 TV',
+      role: 'Sound Engineer',
+      dates: '2019 - 2020',
       location: 'Algiers, Algeria',
-      focus: 'Television series · Bent Leblad',
+      focus: 'Broadcast production',
       highlights: [
-        'Provided primary sound assistance for the television series “Bent Leblad” ensuring clear audio capture.',
+        'Handled sound engineering across channel production and post-production.',
       ],
     },
   ] satisfies Experience[],

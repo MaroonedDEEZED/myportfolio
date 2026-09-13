@@ -53,6 +53,17 @@ videos = [
 'https://res.cloudinary.com/zsyvfq70/video/upload/v1789235835/IMG_2517.mp4',
 'https://res.cloudinary.com/zsyvfq70/video/upload/v1789235833/This_is_Ottoman.mp4',
 'https://res.cloudinary.com/zsyvfq70/video/upload/v1789235831/Video_Idea_4.mp4',
+'https://res.cloudinary.com/zsyvfq70/video/upload/v1789333966/Cq1.mp4',
+'https://res.cloudinary.com/zsyvfq70/video/upload/v1789338224/Ram_Vibes_2_v2_1.mp4',
+'https://res.cloudinary.com/zsyvfq70/video/upload/v1789338227/Coffee_and_Sweet_V3_1.mp4',
+'https://res.cloudinary.com/zsyvfq70/video/upload/v1789338235/Hamoud_boualem_ad_2_1.mp4',
+'https://res.cloudinary.com/zsyvfq70/video/upload/v1789338239/Top_Sports_Match_1.mp4',
+'https://res.cloudinary.com/zsyvfq70/video/upload/v1789338247/FTV_8.mp4',
+'https://res.cloudinary.com/zsyvfq70/video/upload/v1789338251/Hamoud_boualem_Ad_1_1.mp4',
+'https://res.cloudinary.com/zsyvfq70/video/upload/v1789338251/Clements_Work_Process-.mp4',
+'https://res.cloudinary.com/zsyvfq70/video/upload/v1789338252/Djezzy_Commercial_1_1.mp4',
+'https://res.cloudinary.com/zsyvfq70/video/upload/v1789338259/OMO_ad-.mp4',
+'https://res.cloudinary.com/zsyvfq70/video/upload/v1789338266/AMNM_QND_V1-1_1.mp4',
 ]
 
 all_assets = []

@@ -14,7 +14,7 @@ export const cv = {
   phone: '+974 7027 3027',
   email: 'bouakbamarouane@gmail.com',
   portfolio: 'https://mega.nz/folder/Wq4Q0T4K#giNkfTvU4BpdZ86JJHaqaQ',
-  intro: 'Content producer with 7 years of end-to-end production across advertising, broadcast, documentary and branded social content, working in Algeria and Qatar. Builds short-form and campaign video from brief to final master — camera, edit, colour, motion graphics and full audio post under one pair of hands. Native Arabic, proficient English and French; based in Doha and available across the GCC.',
+  intro: 'Content producer with 7 years of end-to-end production across advertising, broadcast, documentary and branded social content, in Algeria and Qatar. Builds short-form and campaign video from brief to final master — camera, edit, colour, motion and full audio post. Native Arabic, English and French; based in Doha, available across the GCC.',
   education: {
     school: 'ISMAS',
     detail: 'Institut Supérieur des Métiers des Arts du Spectacle',
@@ -22,6 +22,17 @@ export const cv = {
     location: 'Algiers, Algeria',
   },
   experience: [
+    {
+      company: 'Al Asmakh Real Estate Development',
+      role: 'Director of Photography / Video Editor',
+      dates: 'Jul 2026 - Sep 2026',
+      location: 'Doha, Qatar',
+      focus: 'Residential developments · advertising campaigns',
+      highlights: [
+        'Shot and edited two advertising campaigns for Al Asmakh residential developments — Paramount Residence and Les Maisons Blanches.',
+        'Owned production end to end, from brief and shot planning through edit, colour grade and final master delivery.',
+      ],
+    },
     {
       company: 'Digiturnal',
       role: 'Director of Photography / Video Editor',
@@ -38,7 +49,7 @@ export const cv = {
       company: 'Self-employed',
       role: 'Freelance Content Producer',
       dates: 'Aug 2024 - Sep 2025',
-      location: 'Doha, Qatar / Remote',
+      location: 'Doha, Qatar',
       focus: 'Independent clients · healthcare · hospitality',
       highlights: [
         'Produced social media content for a roster of independent clients across the healthcare and hospitality sectors, including medical centres and restaurants.',
@@ -124,7 +135,7 @@ export const cv = {
     { label: 'Post-Production & Motion', detail: 'Editing · colour grading · motion graphics · typography · logo animation · infographics · transitions' },
     { label: 'Audio Production', detail: 'Sound design · studio & field recording · dialogue editing · mixing · mastering · music composition' },
     { label: 'Production Management', detail: 'Pre-production planning · logistics · post-production workflow management · crew coordination · client management' },
-    { label: 'Software', detail: 'DaVinci Resolve · Adobe Creative Suite · Premiere Pro · After Effects · Photoshop · Illustrator · InDesign · Audition · Nuendo · AI tools' },
+    { label: 'Software', detail: 'DaVinci Resolve · Premiere Pro · After Effects · Photoshop · Illustrator · InDesign · Audition · Nuendo · AI tools' },
   ],
   languages: [
     { label: 'Arabic', detail: 'Native' },

@@ -102,7 +102,6 @@ function App() {
           <>
             <section className="hero section-pad">
               <div className="hero-copy">
-                <div className="eyebrow"><span className="status-dot" /> Available for selected projects <span className="eyebrow-line" /></div>
                 <h1>Stories with<br /><em>signal.</em></h1>
                 <p className="hero-intro">{cv.intro}</p>
                 <div className="hero-actions">
@@ -112,7 +111,7 @@ function App() {
                 </div>
               </div>
               <div className="hero-art" aria-label="Portrait of Marouane Bouakba">
-                <div className="portrait-stage"><img src="/myimage.jpeg" alt="Marouane Bouakba" /><span className="portrait-label">MAROUANE BOUAKBA<br /><strong>VISUAL ARTIST / 01</strong></span></div>
+                <div className="portrait-stage"><img src="/myimage.jpeg" alt="Marouane Bouakba" /></div>
               </div>
               <div className="hero-meta"></div>
             </section>
@@ -153,7 +152,7 @@ function App() {
             </section>
 
             <section className="work-section section-pad" id="work">
-              <div className="section-heading"><div className="section-kicker"><span>03</span><span>Experience archive</span></div><span className="archive-count">{String(cv.experience.length).padStart(2, '0')} roles indexed</span></div>
+              <div className="section-heading"><div className="section-kicker"><span>03</span><span>Experience archive</span></div></div>
               <div className="filter-bar" role="tablist" aria-label="Filter experience">
                 {filters.map((filter) => <button key={filter} className={activeFilter === filter ? 'filter active' : 'filter'} onClick={() => setActiveFilter(filter)}>{filter}</button>)}
               </div>

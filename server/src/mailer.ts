@@ -98,19 +98,9 @@ export function validateContact(input: ContactInput): { ok: true; value: Contact
   return { ok: true, value: { name, email, phone, message } };
 }
 
-/** Plain-text body assembled for the template's {{message}} variable. */
-function composeBody(value: ContactFields) {
-  return [
-    'New enquiry from the portfolio site.',
-    '',
-    `Name:    ${value.name}`,
-    `Email:   ${value.email}`,
-    `Phone:   ${value.phone || '— not given —'}`,
-    '',
-    'Message',
-    '-------',
-    value.message,
-  ].join('\n');
+/** Contact line shown at the foot of the visitor's copy — email, plus phone when given. */
+function composeContact(value: ContactFields) {
+  return value.phone ? `${value.email} · ${value.phone}` : value.email;
 }
 
 // Map EmailJS's failure statuses onto what the visitor should see. The details
@@ -158,11 +148,12 @@ export async function sendContactMessage(input: ContactInput): Promise<ContactOu
         user_id: config.publicKey,
         accessToken: config.privateKey,
         template_params: {
-          from_name: value.name,
-          reply_to: value.email,
+          // These names must match the {{variables}} in the EmailJS template.
+          name: value.name,
+          // The template's "To Email" is {{email}} — the visitor's own address.
           email: value.email,
-          phone: value.phone || '— not given —',
-          message: composeBody(value),
+          contact: composeContact(value),
+          message: value.message,
         },
       }),
       signal: AbortSignal.timeout(EMAILJS_TIMEOUT_MS),

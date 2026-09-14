@@ -1,0 +1,226 @@
+<title>Email preview — Contact confirmation</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:ital,wght@1,600&display=swap">
+<style>
+  :root {
+    --ink: #111c1d;
+    --card: #151f20;
+    --card-deep: #1a2627;
+    --paper: #e8e9de;
+    --muted: #9ba8a3;
+    --line: #333d3d;
+    --orange: #f06d36;
+    --mint: #bad6bf;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ink);
+    color: var(--paper);
+    font-family: 'Manrope', 'Segoe UI', Helvetica, Arial, sans-serif;
+    padding: 48px 20px 64px;
+  }
+
+  .wrap { max-width: 620px; margin: 0 auto; }
+
+  .kicker {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .kicker::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+
+  .lede {
+    margin: 0 0 28px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+  .lede strong { color: var(--paper); font-weight: 600; }
+  .lede code {
+    font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+    font-size: 13px;
+    color: var(--mint);
+    background: var(--card-deep);
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+
+  /* The email card — mirrors the template exactly. */
+  .email {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .email-bar { height: 6px; background: var(--orange); }
+  .email-inner { padding: 32px; }
+  .email-brand {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--paper);
+    display: block;
+    margin: 0 0 24px;
+  }
+  .email-h1 {
+    margin: 0 0 16px;
+    font-size: 24px;
+    line-height: 1.25;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+    color: var(--paper);
+    text-wrap: balance;
+  }
+  .email-h1 em {
+    color: var(--orange);
+    font-family: 'Playfair Display', Georgia, serif;
+    font-style: italic;
+    letter-spacing: -0.07em;
+  }
+  .email p { font-size: 15px; line-height: 1.6; margin: 0 0 20px; }
+  .email .hi { color: var(--paper); margin-bottom: 12px; }
+  .email .body { color: var(--muted); }
+
+  .quote {
+    background: var(--card-deep);
+    border-left: 4px solid var(--orange);
+    border-radius: 4px;
+    padding: 16px 20px;
+    margin: 0 0 8px;
+  }
+  .quote-label {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 700;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .quote-text {
+    display: block;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--paper);
+    white-space: pre-line;
+  }
+  .quote-from { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+
+  .email .reply-window { margin: 24px 0 0; color: var(--paper); }
+  .email .sign { margin: 32px 0 0; color: var(--paper); }
+  .email .sign strong { color: var(--paper); }
+
+  .email-foot {
+    border-top: 1px solid var(--line);
+    padding: 24px 32px 32px;
+    font-size: 13px;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  /* EmailJS settings table. */
+  .settings { margin-top: 32px; }
+  .settings h2 {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    margin: 0 0 14px;
+  }
+  .settings dl {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 0;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .settings dt, .settings dd {
+    padding: 10px 16px;
+    font-size: 13.5px;
+    line-height: 1.5;
+    border-bottom: 1px solid var(--line);
+    margin: 0;
+  }
+  .settings dl > :nth-last-child(-n+2) { border-bottom: 0; }
+  .settings dt {
+    color: var(--muted);
+    font-weight: 600;
+    background: var(--card-deep);
+  }
+  .settings dd { color: var(--paper); }
+  .settings dd code {
+    font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+    font-size: 12.5px;
+    color: var(--mint);
+  }
+  .settings .note {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--muted);
+    margin: 12px 0 0;
+  }
+
+  @media (max-width: 480px) {
+    body { padding: 32px 16px 48px; }
+    .email-inner, .email-foot { padding-left: 20px; padding-right: 20px; }
+    .settings dl { grid-template-columns: 1fr; }
+    .settings dd { border-top: 0; padding-top: 2px; }
+    .settings dt { padding-bottom: 4px; }
+  }
+</style>
+
+<div class="wrap">
+  <div class="kicker">Contact confirmation email</div>
+  <p class="lede">
+    Preview of the rebuilt <strong>visitor confirmation email</strong> — what a visitor receives moments after
+    sending the form. Styled on the site's own palette and voice, with the message quoted back to them.
+    The fields below show sample content; in the real send, <code>{{name}}</code>, <code>{{message}}</code>
+    and <code>{{contact}}</code> are filled from the form.
+  </p>
+
+  <div class="email">
+    <div class="email-bar"></div>
+    <div class="email-inner">
+      <span class="email-brand">Marouane&nbsp;Bouakba</span>
+      <h1 class="email-h1">Your story is <em>in my inbox.</em></h1>
+      <p class="hi">Hi Layla,</p>
+      <p class="body">Thanks for reaching out through the site. Your message came straight to my inbox — here is what you sent:</p>
+      <div class="quote">
+        <span class="quote-label">Your project</span>
+        <span class="quote-text">We're producing a three-part brand documentary for a hospitality group in Doha, shooting across November. We need a producer-editor who can handle field production and the final cut — roughly 10 minutes per episode, Arabic and English versions.</span>
+      </div>
+      <p class="quote-from">Sent from layla@example.com · +974 5550 1234</p>
+      <p class="reply-window">I usually reply within a day. If it is more urgent, just reply to this email and it reaches me directly.</p>
+      <p class="sign">Best,<br><strong>Marouane Bouakba</strong></p>
+    </div>
+    <div class="email-foot">Doha · Algiers · Everywhere</div>
+  </div>
+
+  <div class="settings">
+    <h2>EmailJS template settings</h2>
+    <dl>
+      <dt>Template</dt><dd>template_mk4mor9</dd>
+      <dt>Subject</dt><dd>Your story is in my inbox</dd>
+      <dt>To Email</dt><dd><code>{{email}}</code></dd>
+      <dt>Reply To</dt><dd>bouakbamarouane@gmail.com</dd>
+      <dt>CC</dt><dd>bouakbamarouane@gmail.com</dd>
+      <dt>Content</dt><dd>Paste the HTML from <code>email-templates/visitor-confirmation.html</code></dd>
+    </dl>
+    <p class="note">
+      The CC makes the same template deliver your studio copy: the visitor gets the confirmation at their own
+      address, and the enquiry (with their message quoted) lands in your inbox at the same time. The server
+      already sends <code>name</code>, <code>email</code>, <code>contact</code> and <code>message</code> as
+      template params, so the placeholders resolve once the template is saved.
+    </p>
+  </div>
+</div>

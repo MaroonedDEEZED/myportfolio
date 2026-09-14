@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useRef, useState, type SyntheticEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type SyntheticEvent } from 'react';
 import { ArrowDownRight, ArrowUpRight, Download, ExternalLink, Film, Menu, MoveRight, Play, X } from 'lucide-react';
 import { portfolioAssets, type PortfolioAsset } from './portfolioAssets';
-import { posterUrl, stillUrl } from './mediaUrls';
+import { posterUrl, blurUrl, scaledUrl, stillUrl } from './mediaUrls';
+import { intrinsicSizes } from './portfolioSizes';
+import { posterAdjustments } from './portfolioPosters';
 import { cv as fallbackCv } from '../../server/src/data/cv';
 
 type Experience = {
@@ -28,6 +30,17 @@ type CV = {
 };
 
 const filters = ['All work', 'Camera', 'Edit', 'Sound', 'Production'];
+
+// The site is two real pages sharing one bundle. Routes are history-backed so the
+// portfolio is linkable, survives a refresh, and works with the back button.
+type Route = 'home' | 'portfolio';
+
+const ROUTE_PATH: Record<Route, string> = { home: '/', portfolio: '/portfolio' };
+
+const routeFromPath = (pathname: string): Route => {
+  const clean = pathname.replace(/\/+$/, '').toLowerCase();
+  return clean === '/portfolio' ? 'portfolio' : 'home';
+};
 
 function matchesFilter(item: Experience, filter: string) {
   if (filter === 'All work') return true;
@@ -63,42 +76,70 @@ const slotFor = (index: number): TileSlot => {
 const previewsOnHover = typeof window !== 'undefined'
   && window.matchMedia('(hover: hover) and (prefers-reduced-motion: no-preference)').matches;
 
-function PortfolioTile({ asset, index, onOpen }: { asset: PortfolioAsset; index: number; onOpen: () => void }) {
+/** Poster until the pointer or keyboard focus arrives, then play; rewind on exit. */
+function useHoverPreview(isVideo: boolean) {
   const video = useRef<HTMLVideoElement>(null);
-  const slot = slotFor(index);
-  const { w, h } = TILE_SIZE[slot];
-  const isVideo = asset.kind === 'video';
 
-  // Videos ship as poster only (preload="none"), so a first paint costs no video
-  // bytes. Playback starts when the tile is hovered or focused, and rewinds on exit.
-  const startPreview = () => {
+  const start = () => {
     if (!isVideo || !previewsOnHover) return;
     void video.current?.play().catch(() => {});
   };
 
-  const stopPreview = () => {
+  const stop = () => {
     const element = video.current;
     if (!element) return;
     element.pause();
     element.currentTime = 0;
   };
 
+  return { video, start, stop };
+}
+
+function PortfolioTile({ asset, index, link }: { asset: PortfolioAsset; index: number; link: { href: string; onClick: (event: ReactMouseEvent<HTMLAnchorElement>) => void } }) {
+  const { video, start, stop } = useHoverPreview(asset.kind === 'video');
+  const still = useRef<HTMLImageElement>(null);
+  const [painted, setPainted] = useState(false);
+  const slot = slotFor(index);
+  const { w, h } = TILE_SIZE[slot];
+  const isVideo = asset.kind === 'video';
+  const adjust = posterAdjustments[asset.title];
+
+  // A blurred ~350 byte miniature of this tile's own frame, so the tile holds its
+  // colours from the first paint instead of showing an empty box that later pops.
+  const placeholder = blurUrl(isVideo ? asset.poster : asset.asset, 24, 16, adjust?.transform);
+
+  // An image restored from cache can finish before React attaches its handler, and
+  // that missed event would leave the still at opacity 0 forever. Check once on
+  // mount as well, so the reveal never depends on the event arriving.
+  useEffect(() => {
+    if (still.current?.complete) setPainted(true);
+  }, []);
+
   return (
-    <button
-      type="button"
+    <a
       className={`pf-tile pf-tile--${slot}${isVideo ? ' pf-tile--video' : ''}`}
-      onClick={onOpen}
-      onMouseEnter={startPreview}
-      onMouseLeave={stopPreview}
-      onFocus={startPreview}
-      onBlur={stopPreview}
-      aria-label={`${isVideo ? 'Video' : 'Photo'} ${String(index + 1).padStart(2, '0')} — open portfolio`}
+      {...link}
+      onMouseEnter={start}
+      onMouseLeave={stop}
+      onFocus={start}
+      onBlur={stop}
+      aria-label={`${isVideo ? 'Video' : 'Photo'} ${String(index + 1).padStart(2, '0')} — open the portfolio`}
     >
-      <span className="pf-tile-media">
+      <span className={`pf-tile-media${painted ? ' is-painted' : ''}`}>
+        {placeholder && <span className="pf-tile-lqip" style={{ backgroundImage: `url("${placeholder}")` }} />}
         {isVideo ? (
-          <video ref={video} src={asset.asset} poster={posterUrl(asset.poster, w, h)} muted loop playsInline preload="none" />
+          <video ref={video} src={asset.asset} poster={posterUrl(asset.poster, w, h, adjust?.transform)} muted loop playsInline preload="none" />
         ) : (
-          <img src={stillUrl(asset.asset, w, h)} alt="" loading={index === 0 ? 'eager' : 'lazy'} decoding="async" />
+          <img
+            ref={still}
+            className="pf-tile-still"
+            src={stillUrl(asset.asset, w, h)}
+            alt=""
+            loading={index === 0 ? 'eager' : 'lazy'}
+            fetchPriority={index === 0 ? 'high' : 'auto'}
+            decoding="async"
+            onLoad={() => setPainted(true)}
+          />
         )}
         <span className="pf-tile-chip">{isVideo ? <><Play size={10} /> Video</> : 'Photo'}</span>
       </span>
@@ -106,7 +147,7 @@ function PortfolioTile({ asset, index, onOpen }: { asset: PortfolioAsset; index:
         <span className="pf-tile-index">{String(index + 1).padStart(2, '0')}</span>
         <span className="pf-tile-open">Open <ArrowUpRight size={13} /></span>
       </span>
-    </button>
+    </a>
   );
 }
 
@@ -114,12 +155,54 @@ function App() {
   const [cv, setCv] = useState<CV | null>(null);
   const [activeFilter, setActiveFilter] = useState('All work');
   const [menuOpen, setMenuOpen] = useState(false);
-  const [page, setPage] = useState<'home' | 'portfolio'>('home');
+  const [page, setPage] = useState<Route>(() => routeFromPath(window.location.pathname));
   const [apiError, setApiError] = useState<string | null>(null);
+  // Set when a navigation also carries a hash, so the scroll effect below knows to
+  // seek a section instead of jumping to the top.
+  const pendingHash = useRef<string | null>(null);
 
   useEffect(() => {
+    const onPopState = () => {
+      pendingHash.current = null;
+      setPage(routeFromPath(window.location.pathname));
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  useEffect(() => {
+    const hash = pendingHash.current;
+    pendingHash.current = null;
+    if (hash) {
+      document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [page]);
+
+  const navigate = (next: Route, hash?: string) => {
+    setMenuOpen(false);
+    if (page === next) {
+      // Same page: no history entry, just seek.
+      if (hash) document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth' });
+      else window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    pendingHash.current = hash ?? null;
+    window.history.pushState({ route: next }, '', hash ? `${ROUTE_PATH[next]}#${hash}` : ROUTE_PATH[next]);
+    setPage(next);
+  };
+
+  // Real href for every navigation, with the click intercepted for instant
+  // client-side routing. Middle-click and open-in-new-tab still work.
+  const linkTo = (next: Route, hash?: string) => ({
+    href: hash ? `${ROUTE_PATH[next]}#${hash}` : ROUTE_PATH[next],
+    onClick: (event: ReactMouseEvent<HTMLAnchorElement>) => {
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+      event.preventDefault();
+      navigate(next, hash);
+    },
+  });
 
   useEffect(() => {
     fetch('/api/cv')
@@ -159,11 +242,11 @@ function App() {
   return (
     <div className="site-shell">
       <header className="topbar">
-        <a className="brand" href="#top" aria-label="Back to top" onClick={() => setPage('home')}><span className="brand-mark"><span>M</span><span>B</span></span><span className="brand-text">Marouane<br />Bouakba</span></a>
+        <a className="brand" aria-label="Marouane Bouakba, back to the studio page" {...linkTo('home')}><span className="brand-mark"><span>M</span><span>B</span></span><span className="brand-text">Marouane<br />Bouakba</span></a>
         <nav className={menuOpen ? 'nav-links nav-open' : 'nav-links'}>
-          <button className="nav-link-button" onClick={() => { setPage('home'); setMenuOpen(false); }}>Home</button>
-          <button className="nav-link-button" onClick={() => { setPage('portfolio'); setMenuOpen(false); }}>Portfolio</button>
-          <button className="nav-link-button" onClick={() => { setPage('home'); setMenuOpen(false); window.location.hash = '#contact'; }}>Contact</button>
+          <a className="nav-link-button" {...linkTo('home')}>Home</a>
+          <a className="nav-link-button" {...linkTo('portfolio')}>Portfolio</a>
+          <a className="nav-link-button" {...linkTo('home', 'contact')}>Contact</a>
         </nav>
         <a className="header-cta" href={`mailto:${cv.email}`}><span>Start a conversation</span><ArrowUpRight size={15} /></a>
         <button className="menu-button" onClick={() => setMenuOpen(!menuOpen)} aria-label={menuOpen ? 'Close menu' : 'Open menu'}>{menuOpen ? <X size={20} /> : <Menu size={20} />}</button>
@@ -172,7 +255,7 @@ function App() {
       <main id="top">
         {apiError && <div className="site-warning"><span>{apiError}</span></div>}
         {page === 'portfolio' ? (
-          <PortfolioPage cv={cv} onBack={() => setPage('home')} />
+          <PortfolioPage cv={cv} linkHome={linkTo('home')} />
         ) : (
           <>
             <section className="hero section-pad">
@@ -181,7 +264,7 @@ function App() {
                 <p className="hero-intro">{cv.intro}</p>
                 <div className="hero-actions">
                   <a className="button button-primary" href="#work">Explore the work <ArrowDownRight size={17} /></a>
-                  <button className="button button-quiet" onClick={() => setPage('portfolio')}>Open portfolio <ArrowUpRight size={16} /></button>
+                  <a className="button button-quiet" {...linkTo('portfolio')}>Open portfolio <ArrowUpRight size={16} /></a>
                   <a className="button button-quiet" href="/Marouane_Bouakba_Content_Producer_CV.pdf" download>Download CV <Download size={16} /></a>
                 </div>
               </div>
@@ -197,12 +280,12 @@ function App() {
                   <p className="portfolio-tally">
                     <strong>{portfolioCounts.videos}</strong> films · <strong>{portfolioCounts.stills}</strong> stills
                   </p>
-                  <button className="section-link" onClick={() => setPage('portfolio')}>Enter Portfolio Page <ArrowUpRight size={14} /></button>
+                  <a className="section-link" {...linkTo('portfolio')}>Enter Portfolio Page <ArrowUpRight size={14} /></a>
                 </div>
               </div>
               <div className="portfolio-feed">
                 {portfolioAssets.slice(0, 4).map((asset, index) => (
-                  <PortfolioTile key={asset.title} asset={asset} index={index} onOpen={() => setPage('portfolio')} />
+                  <PortfolioTile key={asset.title} asset={asset} index={index} link={linkTo('portfolio')} />
                 ))}
               </div>
             </section>
@@ -245,10 +328,137 @@ function App() {
   );
 }
 
-function PortfolioPage({ cv, onBack }: { cv: CV; onBack: () => void }) {
+function PortfolioPageCard({ asset, onOpen, onSettled }: { asset: PortfolioAsset; onOpen: () => void; onSettled: () => void }) {
+  const isVideo = asset.kind === 'video';
+  const { video, start, stop } = useHoverPreview(isVideo);
+  const still = useRef<HTMLImageElement>(null);
+  const reported = useRef(false);
+  const [painted, setPainted] = useState(false);
+  const size = frameSize(asset.title);
+  const adjust = posterAdjustments[asset.title];
+  const placeholder = blurUrl(isVideo ? asset.poster : asset.asset, 24, 16, adjust?.transform);
+
+  const report = () => {
+    if (reported.current) return;
+    reported.current = true;
+    onSettled();
+  };
+
+  useEffect(() => {
+    if (still.current?.complete) setPainted(true);
+  }, []);
+
+  // A poster emits no load event to wait on, so video cards settle on mount; the
+  // spinner is gated by the stills, which do report back.
+  useEffect(() => {
+    if (isVideo) report();
+  }, [isVideo]);
+
+  return (
+    <article className="portfolio-page-card">
+      <button
+        className={`portfolio-page-card-media${size ? ' has-ratio' : ''}${painted ? ' is-painted' : ''}`}
+        type="button"
+        style={size ? { aspectRatio: `${size.w} / ${size.h}` } : undefined}
+        onClick={onOpen}
+        onMouseEnter={start}
+        onMouseLeave={stop}
+        onFocus={start}
+        onBlur={stop}
+        aria-label={isVideo ? `Play ${asset.title}` : `View ${asset.title}`}
+      >
+        {placeholder && <span className="pf-lqip" style={{ backgroundImage: `url("${placeholder}")` }} />}
+        {isVideo ? (
+          <video ref={video} src={asset.asset} poster={scaledUrl(asset.poster, 900, adjust?.transform)} muted loop playsInline preload="none" />
+        ) : (
+          <img
+            ref={still}
+            src={scaledUrl(asset.asset, 900) ?? asset.asset}
+            alt={asset.title}
+            loading="lazy"
+            decoding="async"
+            onLoad={() => { setPainted(true); report(); }}
+            onError={() => { setPainted(true); report(); }}
+          />
+        )}
+      </button>
+    </article>
+  );
+}
+
+// The archive streams rather than blocking on sixty assets: a spinner covers the
+// first screenful, then further cards arrive as the sentinel nears the viewport.
+const PAGE_INITIAL = 8;
+const PAGE_BATCH = 12;
+const LOADER_CEILING_MS = 6000;
+const MASONRY_COLUMNS = 4;
+const NARROW = '(max-width: 850px)';
+
+/** Mirrors the stylesheet's column breakpoints so JS and CSS never disagree. */
+function useColumnCount() {
+  const [count, setCount] = useState(() =>
+    (typeof window !== 'undefined' && window.matchMedia(NARROW).matches ? 1 : MASONRY_COLUMNS));
+
+  useEffect(() => {
+    const query = window.matchMedia(NARROW);
+    const update = () => setCount(query.matches ? 1 : MASONRY_COLUMNS);
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
+
+  return count;
+}
+
+/**
+ * Frame dimensions to reserve for an asset. A letterboxed video is delivered
+ * cropped, so the crop's dimensions win over the source frame's — otherwise the
+ * reserved box would be the wrong shape and the picture would be re-cropped.
+ */
+function frameSize(title: string) {
+  return posterAdjustments[title] ?? intrinsicSizes[title];
+}
+
+/**
+ * CSS multi-column re-balances the whole archive whenever a batch arrives, which
+ * briefly leaves ragged gaps and shuffles cards between columns. Placing each card
+ * in the shortest column ourselves keeps the layout stable as it streams: existing
+ * cards never move, and a gap cannot open because the next card fills it.
+ *
+ * Heights are tracked in column-widths — the intrinsic ratio is proportional to the
+ * rendered height because every column is the same width.
+ */
+function distributeIntoColumns(assets: PortfolioAsset[], count: number) {
+  const columns: PortfolioAsset[][] = Array.from({ length: count }, () => []);
+  const heights = new Array(count).fill(0);
+
+  for (const asset of assets) {
+    const size = frameSize(asset.title);
+    let shortest = 0;
+    for (let i = 1; i < count; i += 1) {
+      if (heights[i] < heights[shortest]) shortest = i;
+    }
+    columns[shortest].push(asset);
+    // Unknown dimensions are counted as a portrait-ish frame so they still land fairly.
+    heights[shortest] += size ? size.h / size.w : 1.2;
+  }
+
+  return columns;
+}
+
+function PortfolioPage({ cv, linkHome }: { cv: CV; linkHome: { href: string; onClick: (event: ReactMouseEvent<HTMLAnchorElement>) => void } }) {
   const [viewerAsset, setViewerAsset] = useState<PortfolioAsset | null>(null);
   const [viewerError, setViewerError] = useState(false);
-  const portfolioDisplayAssets = portfolioAssets;
+  const [visible, setVisible] = useState(PAGE_INITIAL);
+  const [settled, setSettled] = useState(0);
+  const [ready, setReady] = useState(false);
+  const sentinel = useRef<HTMLDivElement>(null);
+
+  const total = portfolioAssets.length;
+  const firstBatch = Math.min(PAGE_INITIAL, total);
+  const shown = portfolioAssets.slice(0, visible);
+  const columnCount = useColumnCount();
+  const columns = useMemo(() => distributeIntoColumns(shown, columnCount), [shown, columnCount]);
 
   const openPreview = (asset: PortfolioAsset) => {
     setViewerError(false);
@@ -259,6 +469,33 @@ function PortfolioPage({ cv, onBack }: { cv: CV; onBack: () => void }) {
     setViewerError(false);
     setViewerAsset(null);
   };
+
+  // Reveal once the opening grid has settled — counted whether assets loaded or
+  // failed, so one broken file cannot hold the spinner open.
+  useEffect(() => {
+    if (settled >= firstBatch) setReady(true);
+  }, [settled, firstBatch]);
+
+  // A ceiling on the wait, so a stalled request never traps the visitor.
+  useEffect(() => {
+    const timer = window.setTimeout(() => setReady(true), LOADER_CEILING_MS);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  // Extend the grid as the end of it comes into view, well before it is reached.
+  // Depends on `ready` too: the sentinel is not in the tree until the loader clears.
+  useEffect(() => {
+    if (!ready) return;
+    const node = sentinel.current;
+    if (!node || visible >= total) return;
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) {
+        setVisible((count) => Math.min(count + PAGE_BATCH, total));
+      }
+    }, { rootMargin: '900px 0px' });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [ready, visible, total]);
 
   useEffect(() => {
     const onEscape = (event: KeyboardEvent) => {
@@ -281,31 +518,35 @@ function PortfolioPage({ cv, onBack }: { cv: CV; onBack: () => void }) {
             <p className="portfolio-page-intro">Field production, visual direction, image systems, motion studies and sound-led editorial work.</p>
           </div>
           <div className="portfolio-page-actions">
-            <button className="button button-primary" onClick={onBack}>Back to studio <ArrowDownRight size={14} /></button>
+            <a className="button button-primary" {...linkHome}>Back to studio <ArrowDownRight size={14} /></a>
             <a className="button button-quiet" href={`mailto:${cv.email}`}>Commission <ArrowUpRight size={16} /></a>
           </div>
         </div>
       </section>
 
-      <section className="portfolio-page-grid section-pad">
-        {portfolioDisplayAssets.map((asset) => (
-          <article className="portfolio-page-card" key={asset.title}>
-            <button className="portfolio-page-card-media" type="button" onClick={() => openPreview(asset)} aria-label={`Open ${asset.title}`}> 
-              {asset.kind === 'photo' ? (
-                <img src={asset.asset} alt={asset.title} onError={(event: SyntheticEvent<HTMLImageElement>) => {
-                  event.currentTarget.onerror = null;
-                  setViewerError(true);
-                }} />
-              ) : (
-                <video muted loop playsInline autoPlay src={asset.asset} poster={asset.poster} onError={(event: SyntheticEvent<HTMLVideoElement>) => {
-                  event.currentTarget.onerror = null;
-                  setViewerError(true);
-                }} />
-              )}
-            </button>
-          </article>
-        ))}
-      </section>
+      <div className="portfolio-page-body section-pad">
+        {!ready && (
+          <div className="portfolio-loader" role="status" aria-live="polite">
+            <span className="portfolio-loader-ring" />
+            <span className="portfolio-loader-text">Loading archive</span>
+          </div>
+        )}
+        <div className={`portfolio-masonry${ready ? ' is-ready' : ''}`} aria-busy={!ready}>
+          {columns.map((column, columnIndex) => (
+            <div className="portfolio-masonry-column" key={columnIndex}>
+              {column.map((asset) => (
+                <PortfolioPageCard
+                  key={asset.title}
+                  asset={asset}
+                  onOpen={() => openPreview(asset)}
+                  onSettled={() => setSettled((count) => count + 1)}
+                />
+              ))}
+            </div>
+          ))}
+        </div>
+        {ready && visible < total && <div ref={sentinel} className="portfolio-sentinel" aria-hidden="true" />}
+      </div>
 
       {viewerAsset && (
         <div className="media-viewer-backdrop" onClick={closePreview} role="dialog" aria-modal="true" aria-label={`Preview ${viewerAsset.title}`}> 

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type SyntheticEvent } from 'react';
-import { ArrowDownRight, ArrowUpRight, Download, ExternalLink, Film, Menu, MoveRight, Play, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent as ReactChangeEvent, type FormEvent as ReactFormEvent, type MouseEvent as ReactMouseEvent, type SyntheticEvent } from 'react';
+import { ArrowDownRight, ArrowUpRight, Download, ExternalLink, Film, Menu, Play, X } from 'lucide-react';
 import { portfolioAssets, type PortfolioAsset } from './portfolioAssets';
 import { posterUrl, blurUrl, scaledUrl, stillUrl } from './mediaUrls';
 import { intrinsicSizes } from './portfolioSizes';
@@ -29,8 +29,6 @@ type CV = {
   languages: { label: string; detail: string }[];
 };
 
-const filters = ['All work', 'Camera', 'Edit', 'Sound', 'Production'];
-
 // The site is two real pages sharing one bundle. Routes are history-backed so the
 // portfolio is linkable, survives a refresh, and works with the back button.
 type Route = 'home' | 'portfolio';
@@ -41,18 +39,6 @@ const routeFromPath = (pathname: string): Route => {
   const clean = pathname.replace(/\/+$/, '').toLowerCase();
   return clean === '/portfolio' ? 'portfolio' : 'home';
 };
-
-function matchesFilter(item: Experience, filter: string) {
-  if (filter === 'All work') return true;
-  const text = `${item.role} ${item.focus} ${item.highlights.join(' ')}`.toLowerCase();
-  const terms: Record<string, string[]> = {
-    Camera: ['camera', 'cinematography', 'director of photography'],
-    Edit: ['edit', 'post-production', 'digital'],
-    Sound: ['sound', 'audio', 'music'],
-    Production: ['production', 'logistics', 'manager'],
-  };
-  return terms[filter].some((term) => text.includes(term));
-}
 
 // The feed reads as a curated contact sheet: one feature frame, then supporting
 // tiles. Slots repeat every four items so the pattern survives a different slice.
@@ -153,7 +139,6 @@ function PortfolioTile({ asset, index, link }: { asset: PortfolioAsset; index: n
 
 function App() {
   const [cv, setCv] = useState<CV | null>(null);
-  const [activeFilter, setActiveFilter] = useState('All work');
   const [menuOpen, setMenuOpen] = useState(false);
   const [page, setPage] = useState<Route>(() => routeFromPath(window.location.pathname));
   const [apiError, setApiError] = useState<string | null>(null);
@@ -225,10 +210,8 @@ function App() {
       });
   }, []);
 
-  const visibleExperience = useMemo(
-    () => cv?.experience.filter((item) => matchesFilter(item, activeFilter)) ?? [],
-    [cv, activeFilter],
-  );
+  // The archive runs whole, in the CV's own order — newest role first.
+  const visibleExperience = cv?.experience ?? [];
 
   const portfolioCounts = useMemo(() => {
     const videos = portfolioAssets.filter((asset) => asset.kind === 'video').length;
@@ -246,9 +229,8 @@ function App() {
         <nav className={menuOpen ? 'nav-links nav-open' : 'nav-links'}>
           <a className="nav-link-button" {...linkTo('home')}>Home</a>
           <a className="nav-link-button" {...linkTo('portfolio')}>Portfolio</a>
-          <a className="nav-link-button" {...linkTo('home', 'contact')}>Contact</a>
         </nav>
-        <a className="header-cta" href={`mailto:${cv.email}`}><span>Start a conversation</span><ArrowUpRight size={15} /></a>
+        <a className="header-cta" {...linkTo('home', 'contact')}><span>Start a conversation</span><ArrowUpRight size={15} /></a>
         <button className="menu-button" onClick={() => setMenuOpen(!menuOpen)} aria-label={menuOpen ? 'Close menu' : 'Open menu'}>{menuOpen ? <X size={20} /> : <Menu size={20} />}</button>
       </header>
 
@@ -297,9 +279,6 @@ function App() {
 
             <section className="work-section section-pad" id="work">
               <div className="section-heading"><div className="section-kicker"><span>03</span><span>Experience archive</span></div></div>
-              <div className="filter-bar" role="tablist" aria-label="Filter experience">
-                {filters.map((filter) => <button key={filter} className={activeFilter === filter ? 'filter active' : 'filter'} onClick={() => setActiveFilter(filter)}>{filter}</button>)}
-              </div>
               <div className="timeline">
                 {visibleExperience.map((item, index) => <article className="work-item" key={item.company}>
                   <div className="work-marker"><span>{String(index + 1).padStart(2, '0')}</span><i /></div>
@@ -313,18 +292,114 @@ function App() {
               <div className="section-kicker"><span>04</span><span>Toolkit</span></div>
               <div className="capability-grid">
                 <div className="capability-intro"><h2>Wide lens.<br /><em>Deep craft.</em></h2><p>One practice, many entry points. The work gets stronger when the disciplines speak to one another.</p></div>
-                <div className="skill-list">{cv.skills.map((skill, index) => <div className="skill-row" key={skill.label}><span className="skill-number">0{index + 1}</span><div><h3>{skill.label}</h3><p>{skill.detail}</p></div><MoveRight size={18} /></div>)}</div>
+                <div className="skill-list">{cv.skills.map((skill, index) => <div className="skill-row" key={skill.label}><span className="skill-number">0{index + 1}</span><div><h3>{skill.label}</h3><p>{skill.detail}</p></div></div>)}</div>
               </div>
             </section>
 
-            <section className="education section-pad"><div className="education-card"><div><div className="section-kicker"><span>05</span><span>Formation</span></div><h2>Made in the<br /><em>arts of spectacle.</em></h2></div><div className="edu-detail"><span className="edu-year">ISMAS</span><h3>{cv.education.degree}</h3><p>{cv.education.detail}<br />{cv.education.location}</p></div><div className="language-detail"><span>Languages</span>{cv.languages.map((language) => <p key={language.label}><strong>{language.label}</strong> <small>{language.detail}</small></p>)}</div></div></section>
+            <section className="education section-pad"><div className="education-card"><div><div className="section-kicker"><span>05</span><span>Education</span></div><h2>Formed by the<br /><em>language of frames.</em></h2></div><div className="edu-detail"><span className="edu-year">ISMAS</span><h3>{cv.education.degree}</h3><p>{cv.education.detail}<br />{cv.education.location}</p></div></div></section>
 
-            <section className="contact section-pad" id="contact"><div className="contact-card"><div className="section-kicker"><span>06</span><span>Next scene</span></div><h2>Have a story<br /><em>in mind?</em></h2><a className="contact-email" href={`mailto:${cv.email}`}>{cv.email} <ArrowUpRight size={22} /></a><span className="contact-phone">{cv.phone}</span></div></section>
+            <section className="contact section-pad" id="contact">
+              <div className="contact-card">
+                <div className="section-kicker"><span>06</span><span>Next scene</span></div>
+                <h2>Have a story <em>in mind?</em></h2>
+                <p className="contact-lede">Tell me what you are making — a few lines is plenty. Every message comes straight to my inbox.</p>
+                <ContactForm />
+              </div>
+            </section>
           </>
         )}
       </main>
+      <section className="terms section-pad" aria-labelledby="terms-title">
+        <div className="terms-inner">
+          <h2 className="terms-title" id="terms-title">Terms &amp; conditions</h2>
+          <p>Every film, video and still shown on this site remains the sole property of the client it was produced for. Nothing here transfers ownership, licence or any other right, and no piece may be reused without that client's permission.</p>
+          <p>The work appears for one reason only: to show the skills and experience I bring to a production. No client has endorsed, sponsored or approved this site, and nothing here should be read as a partnership or affiliation.</p>
+          <p>All brand names, logos and trademarks remain the property of their respective owners.</p>
+        </div>
+      </section>
       <footer className="footer"><span>© {new Date().getFullYear()} Marouane Bouakba</span><span>Doha · Algiers · Everywhere</span><span>Built for the moving image <Film size={14} /></span></footer>
     </div>
+  );
+}
+
+type SendState = 'idle' | 'sending' | 'sent' | 'error';
+
+const EMPTY_FORM = { name: '', email: '', phone: '', message: '', company: '' };
+
+// Posts to /api/contact, which relays the message to the studio inbox with the
+// sender's own address set as Reply-To — so replying in Gmail answers them.
+//
+// Validation proper lives on the server (server/src/mailer.ts) and is what the
+// visitor actually sees, so the two can never disagree. The `required` and
+// `type="email"` attributes below only exist for instant native feedback.
+function ContactForm() {
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [state, setState] = useState<SendState>('idle');
+  const [notice, setNotice] = useState<string | null>(null);
+
+  const update = (field: keyof typeof EMPTY_FORM) => (event: ReactChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { value } = event.target;
+    setForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const submit = (event: ReactFormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (state === 'sending') return;
+    setState('sending');
+    setNotice(null);
+    void fetch('/api/contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form),
+    })
+      .then(async (response) => {
+        const payload = await response.json().catch(() => null) as { error?: string } | null;
+        if (!response.ok) throw new Error(payload?.error ?? 'The message could not be sent.');
+        setForm(EMPTY_FORM);
+        setState('sent');
+        setNotice('Thanks — your message is on its way. I usually reply within a day.');
+      })
+      .catch((error: unknown) => {
+        setState('error');
+        setNotice(error instanceof Error ? error.message : 'Something went wrong — please try again.');
+      });
+  };
+
+  return (
+    <form className="contact-form" onSubmit={submit}>
+      <div className="field-pair">
+        <label className="field">
+          <span className="field-label">Your name</span>
+          <input type="text" name="name" value={form.name} onChange={update('name')} required maxLength={120} autoComplete="name" />
+        </label>
+        <label className="field">
+          <span className="field-label">Email</span>
+          <input type="email" name="email" value={form.email} onChange={update('email')} required maxLength={200} autoComplete="email" />
+        </label>
+      </div>
+      <label className="field">
+        <span className="field-label">Phone <em>optional</em></span>
+        <input type="tel" name="phone" value={form.phone} onChange={update('phone')} maxLength={60} autoComplete="tel" />
+      </label>
+      <label className="field">
+        <span className="field-label">Tell me about the project</span>
+        <textarea name="message" value={form.message} onChange={update('message')} required rows={6} maxLength={5000} placeholder="What are you making, when do you need it, and where?" />
+      </label>
+
+      {/* Honeypot: hidden from people and from assistive tech alike. A submission
+          that fills it is dropped silently, so a bot cannot tell it was caught. */}
+      <label className="field-honeypot" aria-hidden="true">
+        <span>Company</span>
+        <input type="text" name="company" value={form.company} onChange={update('company')} tabIndex={-1} autoComplete="off" />
+      </label>
+
+      <div className="contact-actions">
+        <button className="button button-primary" type="submit" disabled={state === 'sending'}>
+          {state === 'sending' ? 'Sending…' : 'Send message'} <ArrowUpRight size={16} />
+        </button>
+        {notice && <p className={state === 'error' ? 'form-note is-error' : 'form-note'} role="status">{notice}</p>}
+      </div>
+    </form>
   );
 }
 
@@ -514,7 +589,7 @@ function PortfolioPage({ cv, linkHome }: { cv: CV; linkHome: { href: string; onC
         <div className="section-kicker"><span>01</span><span>Portfolio archive</span></div>
         <div className="portfolio-page-title">
           <div>
-            <h1>Selected<br /><em>work.</em></h1>
+            <h1>Selected <em>work.</em></h1>
             <p className="portfolio-page-intro">Field production, visual direction, image systems, motion studies and sound-led editorial work.</p>
           </div>
           <div className="portfolio-page-actions">

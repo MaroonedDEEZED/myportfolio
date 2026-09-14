@@ -1,11 +1,9 @@
-import nodemailer from 'nodemailer';
-
 // Contact-form delivery.
-//
+
 // Both the Express server (local dev) and the Vercel function in api/ import
 // this module, so the validation and the wording of a message can only drift in
 // one place. Nothing here is imported by the client — the browser bundle must
-// never pull in nodemailer.
+// never pull in the EmailJS private key.
 
 export type ContactInput = {
   name?: unknown;
@@ -38,36 +36,24 @@ const asText = (value: unknown) => (typeof value === 'string' ? value.trim() : '
 /** Collapses newlines so a crafted name cannot forge extra header lines. */
 const singleLine = (value: string) => value.replace(/[\r\n]+/g, ' ').trim();
 
+const EMAILJS_ENDPOINT = 'https://api.emailjs.com/api/v1.0/email/send';
+// EmailJS refuses requests that carry no Origin header (anti-abuse), and plain
+// server-side fetch sends none. Any honest origin works.
+const EMAILJS_ORIGIN = 'http://localhost';
+const EMAILJS_TIMEOUT_MS = 10000;
+
 function readConfig() {
-  const user = process.env.MAIL_USER?.trim();
-  const password = process.env.MAIL_PASSWORD?.trim();
-  const to = process.env.MAIL_TO?.trim() || user;
-  const host = process.env.MAIL_HOST?.trim();
-  const port = Number(process.env.MAIL_PORT ?? 465);
-  if (!user || !password || !to) return null;
-  return { user, password, to, host, port };
+  const serviceId = process.env.EMAILJS_SERVICE_ID?.trim();
+  const templateId = process.env.EMAILJS_TEMPLATE_ID?.trim();
+  const publicKey = process.env.EMAILJS_PUBLIC_KEY?.trim();
+  const privateKey = process.env.EMAILJS_PRIVATE_KEY?.trim();
+  if (!serviceId || !templateId || !publicKey || !privateKey) return null;
+  return { serviceId, templateId, publicKey, privateKey };
 }
 
 /** True when the deployment has enough configuration to actually send. */
 export function mailConfigured() {
   return readConfig() !== null;
-}
-
-// nodemailer 10 ships no bundled types and the DefinitelyTyped package targets an
-// older line, so the transport type is derived from the factory rather than
-// imported by name. That survives either package moving.
-let transport: ReturnType<typeof nodemailer.createTransport> | null = null;
-
-function getTransport(config: NonNullable<ReturnType<typeof readConfig>>) {
-  if (transport) return transport;
-  transport = nodemailer.createTransport(
-    config.host
-      // An explicit host covers Gmail-on-587, Workspace, or any other SMTP relay.
-      ? { host: config.host, port: config.port, secure: config.port === 465, auth: { user: config.user, pass: config.password } }
-      // No host configured: the overwhelmingly common case, a plain Gmail account.
-      : { service: 'gmail', auth: { user: config.user, pass: config.password } },
-  );
-  return transport;
 }
 
 // Best-effort throttle. A serverless deployment runs several ephemeral instances,
@@ -112,7 +98,7 @@ export function validateContact(input: ContactInput): { ok: true; value: Contact
   return { ok: true, value: { name, email, phone, message } };
 }
 
-/** Plain-text body. Deliberately no HTML part: fewer ways to inject anything. */
+/** Plain-text body assembled for the template's {{message}} variable. */
 function composeBody(value: ContactFields) {
   return [
     'New enquiry from the portfolio site.',
@@ -127,10 +113,22 @@ function composeBody(value: ContactFields) {
   ].join('\n');
 }
 
+// Map EmailJS's failure statuses onto what the visitor should see. The details
+// are logged server-side; the visitor only ever gets a plain retry message.
+function emailjsFailure(status: number): { status: number; error: string } {
+  if (status === 429) {
+    return { status: 429, error: 'Too many messages from this connection. Please try again later.' };
+  }
+  return { status: 502, error: 'The message could not be sent just now. Please try again shortly.' };
+}
+
 /**
  * Validates and sends. Returns `{ok:true}` for anything a visitor should see as
  * success — including a honeypot hit, which is dropped silently so a bot cannot
  * learn that it was caught.
+ *
+ * The private key rides in `accessToken`, which is exactly why this stays on the
+ * server: the browser only ever talks to /api/contact.
  */
 export async function sendContactMessage(input: ContactInput): Promise<ContactOutcome> {
   if (asText(input.company)) return { ok: true };
@@ -140,21 +138,42 @@ export async function sendContactMessage(input: ContactInput): Promise<ContactOu
 
   const config = readConfig();
   if (!config) {
-    console.error('[contact] MAIL_USER / MAIL_PASSWORD are not set; cannot send.');
+    console.error('[contact] EMAILJS_* variables are not set; cannot send.');
     return { ok: false, status: 503, error: 'Email is not configured on this server yet.' };
   }
 
   const value = checked.value;
 
   try {
-    await getTransport(config).sendMail({
-      from: `Portfolio enquiry <${config.user}>`,
-      to: config.to,
-      // So hitting reply in Gmail answers the visitor, not the site's own address.
-      replyTo: value.email,
-      subject: `Portfolio enquiry — ${value.name}`,
-      text: composeBody(value),
+    const response = await fetch(EMAILJS_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        // Sent by browsers automatically; EmailJS blocks requests without it.
+        Origin: EMAILJS_ORIGIN,
+      },
+      body: JSON.stringify({
+        service_id: config.serviceId,
+        template_id: config.templateId,
+        user_id: config.publicKey,
+        accessToken: config.privateKey,
+        template_params: {
+          from_name: value.name,
+          reply_to: value.email,
+          email: value.email,
+          phone: value.phone || '— not given —',
+          message: composeBody(value),
+        },
+      }),
+      signal: AbortSignal.timeout(EMAILJS_TIMEOUT_MS),
     });
+
+    if (!response.ok) {
+      const detail = await response.text().catch(() => '');
+      console.error(`[contact] EmailJS send failed (${response.status}): ${detail}`);
+      return { ok: false, ...emailjsFailure(response.status) };
+    }
+
     return { ok: true };
   } catch (error) {
     console.error('[contact] send failed:', error instanceof Error ? error.message : error);

@@ -1,6 +1,16 @@
 # Marouane Bouakba Portfolio
 
-MERN TypeScript portfolio site for Marouane Bouakba, built with React, Vite, Express, TypeScript and an optional MongoDB persistence layer.
+MERN TypeScript portfolio site for Marouane Bouakba, built with React, Vite, Express, TypeScript and an optional MongoDB persistence layer. Live at https://marouanebouakba.vercel.app/.
+
+The site is designed as a colourist's grading suite: each piece sits on a reference monitor beside a 3D colour cloud of its own pixels (raw WebGL2), and the page's light and accent colour follow whatever piece is on screen.
+
+## Layout
+
+- `client/`: the React app. `src/home/` and `src/work/` are the two pages, `src/suite/` holds the colour cloud, the fluid surround and the spill/accent logic, `src/styles.css` the whole design system.
+- `api/`: Vercel serverless functions for production (`/api/cv`, `/api/contact`).
+- `server/`: the Express API for local development, and the CV data (`server/src/data/cv.ts`).
+- `scripts/`: the media build scripts described below.
+- `email-templates/`: the HTML pasted into the EmailJS template for the contact confirmation email.
 
 ## Run locally
 

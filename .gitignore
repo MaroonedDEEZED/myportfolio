@@ -10,3 +10,9 @@ client/src/mediaManifest.json
 .impeccable/review/
 .impeccable/questions/
 .claude/
+# Design-tool notes: kept on this machine, not part of the site
+.impeccable/
+DESIGN.md
+PRODUCT.md
+SUMMARY.md
+client/public/**/*.webp.json

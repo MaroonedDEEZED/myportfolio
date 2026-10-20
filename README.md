@@ -28,5 +28,5 @@ MongoDB is optional. Set `MONGODB_URI` in `.env` to replace the bundled CV paylo
 The original films and stills stay out of git. Two scripts turn them into what the site serves; both need `ffmpeg` and `ffprobe` on the PATH.
 
 1. Put the originals in `media/` (the unpacked "Work Portfolio" archive, or the two Dropbox folders).
-2. `npm run media` writes small web versions to `client/public/portfolio-media/` and maps them in `client/src/mediaManifest.json`. Both are git-ignored. Without them, every piece falls back to its Dropbox link.
+2. `npm run media` writes small web versions to `client/public/portfolio-media/` (thumbnails, stills, six-second hover previews, and each film at 1080 px on its long side) and maps them in `client/src/mediaManifest.json`. Both are committed: the site serves every piece itself, so it never depends on Dropbox (whose shared links were disabled in October 2026). To read the originals from another folder, set `MEDIA_SOURCE`, e.g. `MEDIA_SOURCE="../originals" npm run media`.
 3. `npm run suite` writes the home page's reference-monitor frames and the per-piece colour samples that the 3D colour cloud plots, into `client/public/suite/` and `client/src/suite/suiteData.json`. These are small and committed, so the home page and the colour cloud work on any host.

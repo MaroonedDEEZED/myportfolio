@@ -12,9 +12,10 @@ export const CV_PDF = '/Marouane_Bouakba_Content_Producer_CV.pdf';
 type LocalAsset = { thumb?: string; full?: string; preview?: string; duration?: number; width?: number; height?: number };
 type Manifest = { assets: Record<string, LocalAsset> };
 
-// Written by `npm run media` (scripts/prepare-media.mjs) and git-ignored, like the
-// files it points at. It maps each piece to small web versions hosted with the site;
-// without it every piece falls back to its original Dropbox link.
+// Written by `npm run media` (scripts/prepare-media.mjs) and committed, like the
+// files it points at: it maps each piece to the small web versions the site serves
+// itself. Without it every piece falls back to its original Dropbox link, which
+// Dropbox disabled in October 2026, so the manifest is what keeps the work playing.
 const generated = import.meta.glob<Manifest>('./mediaManifest.json', { eager: true, import: 'default' });
 const manifest: Manifest | null = Object.values(generated)[0] ?? null;
 

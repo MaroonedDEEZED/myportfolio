@@ -85,8 +85,8 @@ export function Suite({ cv, linkTo }: { cv: CV; linkTo: LinkTo }) {
     setPlaying(false);
   };
 
-  // A hosted web version that fails (it is git-ignored, so absent on some deploys)
-  // falls back to the original; if that fails too, the still returns.
+  // A hosted web version that fails to load falls back to the original; if that
+  // fails too, the still returns.
   const onFilmError = () => {
     if (!fromOriginal) setFromOriginal(true);
     else stopFilm();

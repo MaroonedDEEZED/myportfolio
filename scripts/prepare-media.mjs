@@ -3,10 +3,13 @@
 //   npm run media
 //
 // Reads the originals from media/ (git-ignored: the unpacked "Work Portfolio"
-// archive, or the Dropbox folders) and writes small, fast versions into
-// client/public/portfolio-media/, plus client/src/mediaManifest.json, which the
-// site reads in place of the Dropbox links. Safe to re-run: existing outputs are
-// kept. Needs ffmpeg and ffprobe on the PATH.
+// archive, or the Dropbox folders), or from the folder named by MEDIA_SOURCE, and
+// writes small, fast versions into client/public/portfolio-media/, plus
+// client/src/mediaManifest.json. Both are committed: the site serves every piece
+// itself and the Dropbox links are only a last resort. Safe to re-run: existing
+// outputs are kept. Needs ffmpeg and ffprobe on the PATH.
+//
+//   MEDIA_SOURCE="../New folder/myportfolio-main/media" npm run media
 
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
@@ -14,13 +17,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const sourceDir = path.join(root, 'media');
+const sourceDir = process.env.MEDIA_SOURCE ? path.resolve(root, process.env.MEDIA_SOURCE) : path.join(root, 'media');
 const outDir = path.join(root, 'client', 'public', 'portfolio-media');
 const publicBase = '/portfolio-media';
 const manifestPath = path.join(root, 'client', 'src', 'mediaManifest.json');
 
-const SEGMENT = 6;   // seconds per showreel shot, as the site's reel expects
-const REEL_SHOTS = 8;
+const SEGMENT = 6;   // seconds per hover preview
 
 // --- Registry ---------------------------------------------------------------
 
@@ -113,9 +115,8 @@ function findSource(fileName) {
   return free[0];
 }
 const files = { get: findSource };
-const manifest = { generated: new Date().toISOString(), assets: {}, reel: { wide: [], tall: [] } };
+const manifest = { generated: new Date().toISOString(), assets: {} };
 const missing = [];
-const films = [];
 
 for (const [index, asset] of assets.entries()) {
   const source = files.get(asset.file);
@@ -138,11 +139,10 @@ for (const [index, asset] of assets.entries()) {
   const start = windowStart(asset.title, info.duration);
   ffmpeg(['-ss', String(restTime(asset.title, info.duration)), '-i', source, '-frames:v', '1', '-vf', `${crop}${fitBox(720)}`, '-q:v', '4'], path.join(outDir, 'thumbs', `${name}.jpg`));
   ffmpeg(['-ss', String(start), '-t', String(SEGMENT), '-i', source, '-an', '-vf', `${crop}${fitBox(720)}`, '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '28', '-pix_fmt', 'yuv420p', '-movflags', '+faststart'], path.join(outDir, 'previews', `${name}.mp4`));
-  ffmpeg(['-i', source, '-vf', fitBox(1280), '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '24', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart'], path.join(outDir, 'films', `${name}.mp4`));
+  // The film itself: 1080 on its long side, which fills the viewer on any screen
+  // short of a large retina display, at a quality and size the site can host.
+  ffmpeg(['-i', source, '-vf', fitBox(1080), '-c:v', 'libx264', '-preset', 'slow', '-crf', '26', '-maxrate', '2000k', '-bufsize', '4000k', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '112k', '-movflags', '+faststart'], path.join(outDir, 'films', `${name}.mp4`));
 
-  // The shape the shot has on screen once any letterbox is cropped away.
-  const cropped = adjustments[asset.title]?.match(/w_(\d+),h_(\d+)/);
-  const ratio = cropped ? Number(cropped[1]) / Number(cropped[2]) : info.width / info.height;
   manifest.assets[asset.title] = {
     thumb: web(`thumbs/${name}.jpg`),
     preview: web(`previews/${name}.mp4`),
@@ -151,39 +151,10 @@ for (const [index, asset] of assets.entries()) {
     width: info.width,
     height: info.height,
   };
-  films.push({ title: asset.title, source, name, start, crop, landscape: ratio >= 1.2 });
-}
-
-// --- Showreel ---------------------------------------------------------------
-// Desktop (16:9): landscape films play full frame; vertical films play three side
-// by side, so the picture fills the frame instead of black pillarboxes.
-// Phones (4:5): one vertical film at a time, from its preview.
-
-const landscapes = films.filter((film) => film.landscape);
-const verticals = films.filter((film) => !film.landscape);
-const wide = [];
-while (wide.length < REEL_SHOTS && (landscapes.length || verticals.length >= 3)) {
-  if (landscapes.length && (wide.length % 2 === 0 || verticals.length < 3)) wide.push([landscapes.shift()]);
-  else wide.push(verticals.splice(0, 3));
-}
-
-for (const [index, group] of wide.entries()) {
-  const out = path.join(outDir, 'reel', `wide-${index + 1}.mp4`);
-  const inputs = group.flatMap((film) => ['-ss', String(film.start), '-t', String(SEGMENT), '-i', film.source]);
-  const filter = group.length === 1
-    ? `[0:v]${group[0].crop}scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1[out]`
-    : `${group.map((film, at) => `[${at}:v]${film.crop}scale=406:720:force_original_aspect_ratio=increase,crop=406:720,pad=426:720:10:0:color=black,setsar=1[t${at}]`).join(';')};[t0][t1][t2]hstack=inputs=3,pad=1280:720:1:0:color=black[out]`;
-  ffmpeg([...inputs, '-filter_complex', filter, '-map', '[out]', '-t', String(SEGMENT), '-an', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '26', '-pix_fmt', 'yuv420p', '-movflags', '+faststart'], out);
-  ffmpeg(['-ss', '1', '-i', out, '-frames:v', '1', '-vf', 'scale=320:-2', '-q:v', '4'], path.join(outDir, 'reel', `wide-${index + 1}.jpg`));
-  manifest.reel.wide.push({ src: web(`reel/wide-${index + 1}.mp4`), poster: web(`reel/wide-${index + 1}.jpg`), titles: group.map((film) => film.title) });
-}
-
-for (const film of films.filter((item) => !item.landscape).slice(0, REEL_SHOTS)) {
-  manifest.reel.tall.push({ src: web(`previews/${film.name}.mp4`), poster: web(`thumbs/${film.name}.jpg`), titles: [film.title] });
 }
 
 writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
-console.log(`\nWrote ${Object.keys(manifest.assets).length} assets, ${manifest.reel.wide.length} wide and ${manifest.reel.tall.length} tall reel shots to ${path.relative(root, manifestPath)}`);
+console.log(`\nWrote ${Object.keys(manifest.assets).length} assets to ${path.relative(root, manifestPath)}`);
 if (missing.length) console.log(`Not found in media/ (${missing.length}): ${missing.join(', ')}`);
 const unused = sources.filter((file) => !used.has(file)).map((file) => path.relative(sourceDir, file));
 if (unused.length) console.log(`In media/ but not in the registry (${unused.length}): ${unused.join(', ')}`);

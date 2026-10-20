@@ -4,9 +4,10 @@ dist
 .env.*
 !.env.example
 media/
-client/public/portfolio-media/
+# Web media is committed; only set-aside old encodes stay out
+client/public/portfolio-media/*-old/
+.old-media/
 .impeccable/hook.cache.json
-client/src/mediaManifest.json
 .impeccable/review/
 .impeccable/questions/
 .claude/

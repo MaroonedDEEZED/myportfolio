@@ -1,0 +1,7 @@
+{
+  "files": ["client/index.html"],
+  "exclude": ["email-templates/**"],
+  "insertBefore": "</body>",
+  "commentSyntax": "html",
+  "cspChecked": true
+}

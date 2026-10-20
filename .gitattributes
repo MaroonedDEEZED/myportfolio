@@ -1,0 +1,9 @@
+# Never line-ending-convert binary assets; a converted PDF or image is corrupted.
+*.pdf binary
+*.jpg binary
+*.jpeg binary
+*.png binary
+*.gif binary
+*.webp binary
+*.mp4 binary
+*.mov binary

@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <script>
+      // The first monitor frame is the home page's largest paint; fetch it alongside
+      // the bundle, but only on the home page. First in <head>, so nothing holds it back.
+      if (location.pathname === '/' || location.pathname === '') {
+        var frame = document.createElement('link');
+        frame.rel = 'preload';
+        frame.as = 'image';
+        frame.href = '%HERO_FRAME%';
+        frame.setAttribute('imagesrcset', '%HERO_FRAME% 800w, %HERO_FRAME_LARGE% 1600w');
+        frame.setAttribute('imagesizes', '(max-width: 1100px) 100vw, 60vw');
+        frame.setAttribute('fetchpriority', 'high');
+        document.head.appendChild(frame);
+      }
+    </script>
+    <meta name="theme-color" content="#2a2a2a" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="description" content="Marouane Bouakba, content producer, video editor and director of photography in Doha. Seven years of advertising, broadcast, documentary and social work, from camera to final master." />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <title>Marouane Bouakba | Content producer, video editor, director of photography</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
